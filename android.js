@@ -1,11 +1,16 @@
 const { join } = require("path");
-const { readFileSync, writeFileSync, existsSync } = require("fs");
+const jimp = require("jimp");
+const { join, dirname, basename, includes } = path;
+const { readFileSync, writeFileSync, existsSync, mkdirSync } = fs;
 const { parseStringPromise, Builder } = require("xml2js");
-const { resizeImage, ensureDir } = require("./common");
+const { sync } = require("glob");
+const mustache = require("mustache");
 const getAppPath = (root = process.cwd()) => join(root, "android", "app");
 const getMainPath = (root = process.cwd()) =>
   join(getAppPath(root), "src", "main");
-const getResPath = (root = process.cwd()) => join(getMainPath(root), "res");
+const getResPath = (root = process.cwd()) => {
+  join(getMainPath(root), "res");
+};
 const sizes = {
   xxxhdpi: 4,
   xxhdpi: 3,
@@ -13,19 +18,14 @@ const sizes = {
   hdpi: 1.5,
   mdpi: 1,
 };
-const pathWithScale = (path, isNight = false, scale) => {
-  const p = [path, isNight && "night", scale && scale.length && scale]
-    .filter(Boolean)
-    .join("-");
-  return p;
-};
-const makeImageAsset = async ({
+const pathWithScale = (path, isNight = false, scale = "mdpi") =>
+  path + isNight ? "-night" : "" + scale ? "-" + scale : "";
+const scaleImage = async ({
   sourcePath,
-  root,
+  targetPath,
   targetBase,
   height = 100,
   width = 100,
-  isNight = false,
 }) => {
   await Promise.all(
     Object.entries(sizes).map(async ([label, scale]) => {
@@ -40,26 +40,9 @@ const makeImageAsset = async ({
     })
   );
 };
-const makeColorAsset = async ({ root, isNight = false, name, colorString }) => {
-  const colorsPath = join(getValuesPath(root), "colors.xml");
-  const o = await (existsSync(colorsPath)
-    ? parseStringPromise(readFileSync(colorsPath, { encoding: "utf8" }))
-    : { resources: { color: [] } });
-  const builder = new Builder();
-  writeFileSync(colorsPath, builder.buildObject(o));
-  return true;
-};
-const getDrawablePath = (root = process.cwd(), scale, isNight = false) =>
+const makeColorAsset = ({ root, isNight = false, name, colorString }) => {};
+const makeImageAsset = ({ root, isNight = false, name, height, width }) => {};
+const getDrawablePath = (scale = "", isNight = false, root = process.cwd()) =>
   join(getResPath(root), pathWithScale("drawable", isNight, scale));
 const getValuesPath = (root = process.cwd(), isNight = false) =>
   join(getResPath(root), pathWithScale("values", isNight));
-
-module.exports = {
-  makeImageAsset,
-  makeColorAsset,
-  getDrawablePath,
-  getValuesPath,
-  getAppPath,
-  getMainPath,
-  getResPath,
-};

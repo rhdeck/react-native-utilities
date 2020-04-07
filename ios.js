@@ -1,8 +1,11 @@
-const { join, dirname, basename } = require("path");
-const { readFileSync, writeFileSync, existsSync, mkdirSync } = require("fs");
+const { join, dirname, basename } = path;
+const { readFileSync, writeFileSync, existsSync, mkdirSync } = fs;
 const Xcode = require("@raydeck/xcode");
 const Plist = require("plist");
-const { ensureDir, toFullHexadecimal, resizeImage } = require("./common");
+const { parseStringPromise, Builder } = require("xml2js");
+const { sync } = require("glob");
+const mustache = require("mustache");
+const { ensureDir } = require("./common");
 const hexadecimalToColor = (hex) => ({
   r: (parseInt(hex[1] + hex[2], 16) / 255).toPrecision(15),
   g: (parseInt(hex[3] + hex[4], 16) / 255).toPrecision(15),
@@ -20,7 +23,6 @@ const getAssetsPathFromProject = (project) => {
       contentsPath,
       JSON.stringify({ info: { version: 1, author: "xcode" } }, null, 2)
     );
-  return assetsPath;
 };
 const scaleImage = async ({
   sourcePath,
@@ -31,92 +33,95 @@ const scaleImage = async ({
 }) => {
   if (!existsSync(sourcePath)) throw "No such file";
   ensureDir(targetPath);
-  return Promise.all(
-    scales.map(async (scale) => {
-      const targetName =
-        targetBase + (scale > 1 ? "@" + scale.toString() + "x" : "") + ".png";
-      await resizeImage({
-        source: sourcePath,
-        target: join(targetPath, targetName),
-        height: height * scale,
-        width: width * scale,
-      });
-      return targetName;
-    })
+  await Promise.all(
+    scales.map(async (scale) =>
+      resizeImage(
+        sourcePath,
+        join(targetPath, targetBase) + "@" + scale.toString() + "x.png",
+        height * scale,
+        width * scale
+      )
+    )
   );
 };
 const luminosities = ["light", "dark", null];
 const constrasts = ["high", null];
 const makeImageAsset = async ({
-  root = process.cwd(),
+  sourceFile,
   lightFile,
   lightContrastFile,
   darkFile,
   darkContrastFile,
   name,
+  assetsPath = process.cwd() + "/Images.xcassets",
   height,
   width = 100,
 }) => {
-  if (!height) height = width;
-  //Structure into array of sources
-  //Strucutre is {normal : { light, dark}, high: { light, dark} }
-  const sourceFiles = {
-    high: {
-      light: lightContrastFile || lightFile,
-      dark: darkContrastFile || darkFile || lightContrastFile || lightFile,
-    },
-    normal: {
-      light: lightFile,
-      dark: darkFile || lightFile,
-    },
-  };
+  if (typeof sourceFiles === "string")
+    sourceFiles = { normal: { light: sourceFiles } };
+  if (!sourceFiles.normal) sourceFiles.normal = {};
+  if (sourceFiles.light) sourcesFiles.normal.light = {};
+  if (sourceFiles.dark) sourceFiles.normal.dark = {};
+  if (!sourceFiles.high) sourceFiles.high = { ...sourceFiles.normal };
+  sourceFiles = { high: sourceFiles.high, normal: sourceFiles.normal };
   idioms = ["universal"];
-  const targetPath = join(getAssetsPath(root), name + ".imageset");
-  ensureDir(targetPath);
-  const scaleFiles = { high: {}, normal: {} };
-  scaleFiles.high.light = await scaleImage({
-    sourcePath: sourceFiles.high.light,
-    targetPath,
-    targetBase: [name, "high", "light"].join("_"),
-    height,
-    width,
-  });
-  scaleFiles.high.dark = await scaleImage({
-    sourcePath: sourceFiles.high.dark,
-    targetPath,
-    targetBase: [name, "high", "dark"].join("_"),
-    height,
-    width,
-  });
-  scaleFiles.normal.light = await scaleImage({
-    sourcePath: sourceFiles.normal.light,
-    targetPath,
-    targetBase: [name, "normal", "light"].join("_"),
-    height,
-    width,
-  });
-  scaleFiles.normal.dark = await scaleImage({
-    sourcePath: sourceFiles.normal.dark,
-    targetPath,
-    targetBase: [name, "normal", "dark"].join("_"),
-    height,
-    width,
-  });
-
+  const basePath = join(assetsPath, name + ".imageset");
+  if (!existsSync(basePath)) mkdirSync(basePath);
+  if (!targetHeight) targetHeight = targetWidth;
+  const target = join(basePath, name);
+  const scaledFiles = Object.entries(sourceFiles).reduce(
+    o,
+    ([contrast, { light, dark }]) =>
+      scales.reduce(
+        (o, scale) => {
+          const targetFile = [
+            contrast,
+            "light",
+            name + (scale > 1 ? "@" + scale + "x" : "") + ".png",
+          ].join("_");
+          resizeImage(
+            light,
+            join(target, targetFile),
+            targetHeight * scale,
+            targetWidth * scale
+          );
+          const darkTargetFile = [
+            contrast,
+            "dark",
+            name + (scale > 1 ? "@" + scale + "x" : "") + ".png",
+          ].join("_");
+          resizeImage(
+            dark,
+            join(target, targetFile),
+            targetHeight * scale,
+            targetWidth * scale
+          );
+          o[dark][scale] = darkTargetFile;
+          o[light][scale] = targetFile;
+          return o;
+        },
+        { [o[dark]]: {}, [o[light]]: {} }
+      ),
+    {}
+  );
   //Make scaled files from sources
   //Make scaled images
   const images = luminosities.flatMap((luminosity) =>
     constrasts.flatMap((contrast) =>
       idioms.flatMap((idiom) =>
-        scales.map((scale, index) => {
+        scales.map((scale) => {
           const appearances = (luminosity || contrast) && [
             ...(luminosity
               ? [{ appearance: "luminosity", value: luminosity }]
               : []),
             ...(contrast ? [{ appearance: "contrast", value: contrast }] : []),
           ];
-          const fileName =
-            scaleFiles[contrast || "normal"][luminosity || "light"][index];
+          const luminosityFiles =
+            contrast === "high" && sourceFiles.high
+              ? sourceFiles.high
+              : sourceFiles.normal;
+          const baseFile = luminosityFiles[luminosity ? luminosity : "light"];
+          const fileName = scaledFiles[baseFile][scales];
           return {
             ...(appearances ? { appearances } : {}),
             idiom,
@@ -128,33 +133,34 @@ const makeImageAsset = async ({
     )
   );
   const imageJson = JSON.stringify(
-    { images, info: { author: "xcode", version: 1 } },
+    { image, info: { author: "xcode", version: 1 } },
     null,
     2
   );
-  const contentsPath = join(targetPath, "Contents.json");
-  writeFileSync(contentsPath, imageJson);
+  const contentsPath = join(basePath, "Contents.json");
+  writeFileSync(contentsPath);
+  return imageJson;
 };
 const makeColorAsset = async ({
-  name,
-  lightColor,
-  darkColor,
-  lightContrastColor,
-  darkContrastColor,
-  root = process.cwd(),
+  colors,
+  targetName,
+  assetsPath = process.cwd() + "/Images.xcassets",
 }) => {
-  const colors = { high: {}, normal: {} };
-  colors.high.light = lightContrastColor || lightColor;
-  colors.normal.light = lightColor;
-  colors.high.dark =
-    darkContrastColor || darkColor || lightContrastColor || lightColor;
-  colors.normal.dark = darkColor || lightColor;
-  const o = constrasts.flatMap((contrast) =>
+  const colors = constrasts.flatMap((contrast) =>
     luminosities.flatMap((luminosity) => {
       //get the matching color from colors
-      const colorContrast = contrast || "normal";
-      const colorLuminosity = luminosity || "light";
-      const color = colors[colorContrast][colorLuminosity];
+      let color;
+      if (typeof colors === "string") color = colors;
+      else {
+        const colorContrast = contrast || "normal";
+        const colorLuminosity = luminosity || "light";
+        if (colors[colorContrast]) {
+          if (colors[colorContrast][colorLuminosity])
+            color = colors[colorContrast][colorLuminosity];
+          else if (colors[colorLuminosity]) color = colors[colorLuminosity];
+        } else if (colors[colorLuminosity]) color = colors[colorLuminosity];
+        else color = colors;
+      }
       const out = {};
       if (contrast || luminosity) {
         out.appearances = [];
@@ -185,11 +191,11 @@ const makeColorAsset = async ({
   );
   //contrasts
   const json = JSON.stringify(
-    { colors: o, info: { author: "xcode", version: 1 } },
+    { colors, info: { author: "xcode", version: 1 } },
     null,
     2
   );
-  const colorSetPath = join(getAssetsPath(root), name + ".colorset");
+  const colorSetPath = join(assetsPath, targetName + ".colorset");
   ensureDir(colorSetPath);
   writeFileSync(join(colorSetPath, "Contents.json"), json);
 };
@@ -201,7 +207,6 @@ const getProjectName = (root = process.cwd()) => {
     if (!name) throw new Error("Invalid projectPath");
     return name;
   } catch (e) {
-    console.warn(e);
     throw new Error("invalid appJson");
   }
 };
@@ -210,17 +215,15 @@ const getProjectDir = (root = process.cwd()) =>
   join(getDir(), getProjectName(root));
 const getPBXProj = (root = process.cwd()) =>
   join(getProjectDir(root) + ".xcodeproj", "project.pbxproj");
-const addResource = (fileName, root = process.cwd()) =>
-  addResourceToProject(fileName, getPBXProj(root));
-const addResourceToProject = (fileName, path) => {
-  console.log("project path is ", path);
+const addResource = (root = process.cwd(), fileName) =>
+  addResourceToProject(getPBXProj(root), fileName);
+const addResourceToProject = (path, fileName) => {
   const project = Xcode.project(path);
   project.parseSync();
   const fp = project.getFirstProject();
   const dir = basename(dirname(fileName));
   const file = project.addResourceFile(join(dir, basename(fileName)), null, fp);
-  if (!file) return;
-  file.uuid = project.generateUuid();
+  if (!file) returnfile.uuid = project.generateUuid();
   const nts = project.pbxNativeTargetSection();
   for (var key in nts) {
     if (key.endsWith("_comment")) continue;
@@ -237,8 +240,8 @@ const getPlistPath = (root = process.cwd()) => {
   const projectDir = getProjectDir(root);
   return join(projectDir, "Info.plist");
 };
-const setPlistValue = (key, value, root = process.cwd()) =>
-  setPlistValueToPlist(key, value, getPlistPath(root));
+const setPlistEntry = (key, value, root = process.cwd()) =>
+  setPlistEntryToPlist(key, value, getPlistPath(root));
 const readPlist = (root = process.cwd()) => {
   const path = getPlistPath(root);
   return readPlistFromPlist(path);
@@ -247,7 +250,7 @@ const readPlistFromPlist = (path) => {
   const xml = readFileSync(path, { encoding: "utf8" });
   return Plist.parse(xml);
 };
-const setPlistValueToPlist = (key, value, path) => {
+const setPlistEntryToPlist = (key, value, plist) => {
   const xml = readFileSync(path, { encoding: "utf8" });
   const plist = Plist.parse(xml);
   plist[key] = value;
@@ -266,9 +269,10 @@ const getPlistValueFromPlist = (key, path) => {
 module.exports = {
   readPlist,
   getPlistValue,
-  setPlistValue,
+  setPlistEntry,
   addResource,
   getPBXProj,
+  addResource,
   getProjectDir,
   makeColorAsset,
   makeImageAsset,
