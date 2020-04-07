@@ -64,7 +64,7 @@ const makeColorAsset = async ({ root, isNight = false, name, colorString }) => {
 const getDrawablePath = (root = process.cwd(), scale, isNight = false) =>
   ensureDir(join(getResPath(root), pathWithScale("drawable", isNight, scale)));
 const getValuesPath = (root = process.cwd(), isNight = false) =>
-  join(getResPath(root), pathWithScale("values", isNight));
+  ensureDir(join(getResPath(root), pathWithScale("values", isNight)));
 
 module.exports = {
   makeImageAsset,

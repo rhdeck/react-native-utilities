@@ -1,7 +1,6 @@
 const jimp = require("jimp");
 const { existsSync, mkdirSync } = require("fs");
 const ensureDir = (dir) => {
-  console.log("ensuring ", dir);
   if (!existsSync(dir)) mkdirSync(dir);
   return dir;
 };
