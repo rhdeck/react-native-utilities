@@ -1,0 +1,24 @@
+{
+  "name": "@raydeck/react-native-utilities",
+  "version": "1.0.0",
+  "description": "Utility library for advanced React Native development",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://rhdeck/react-native-utilities"
+  },
+  "keywords": [
+    "react-native"
+  ],
+  "author": "Ray Deck",
+  "license": "MIT",
+  "dependencies": {
+    "@raydeck/xcode": "^2.2.1",
+    "jimp": "^0.10.1",
+    "mustache": "^4.0.1",
+    "plist": "^3.0.1"
+  }
+}
