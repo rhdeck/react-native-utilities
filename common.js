@@ -1,6 +1,10 @@
 const jimp = require("jimp");
 const { existsSync, mkdirSync } = require("fs");
-const ensureDir = (dir) => existsSync(dir) || mkdirSync(dir);
+const ensureDir = (dir) => {
+  console.log("ensuring ", dir);
+  if (!existsSync(dir)) mkdirSync(dir);
+  return dir;
+};
 const toFullHexadecimal = (hex) => {
   const prefixed = hex[0] === "#" ? hex : `#${hex}`;
   const up = prefixed.toUpperCase();

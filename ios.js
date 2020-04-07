@@ -115,13 +115,13 @@ const makeImageAsset = async ({
               : []),
             ...(contrast ? [{ appearance: "contrast", value: contrast }] : []),
           ];
-          const fileName =
+          const filename =
             scaleFiles[contrast || "normal"][luminosity || "light"][index];
           return {
             ...(appearances ? { appearances } : {}),
             idiom,
             scale: scale.toString() + "x",
-            fileName,
+            filename,
           };
         })
       )
@@ -155,7 +155,7 @@ const makeColorAsset = async ({
       const colorContrast = contrast || "normal";
       const colorLuminosity = luminosity || "light";
       const color = colors[colorContrast][colorLuminosity];
-      const out = {};
+      const out = { idiom: "universal" };
       if (contrast || luminosity) {
         out.appearances = [];
         if (contrast)

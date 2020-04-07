@@ -1,7 +1,7 @@
 const { join } = require("path");
 const { readFileSync, writeFileSync, existsSync } = require("fs");
 const { parseStringPromise, Builder } = require("xml2js");
-const { resizeImage, ensureDir } = require("./common");
+const { resizeImage, ensureDir, toFullHexadecimal } = require("./common");
 const getAppPath = (root = process.cwd()) => join(root, "android", "app");
 const getMainPath = (root = process.cwd()) =>
   join(getAppPath(root), "src", "main");
@@ -29,8 +29,7 @@ const makeImageAsset = async ({
 }) => {
   await Promise.all(
     Object.entries(sizes).map(async ([label, scale]) => {
-      const targetDir = join(targetPath, "drawable-" + label);
-      ensureDir(targetDir);
+      const targetDir = ensureDir(getDrawablePath(root, label, isNight));
       return resizeImage({
         source: sourcePath,
         target: join(targetDir, targetBase),
@@ -41,16 +40,29 @@ const makeImageAsset = async ({
   );
 };
 const makeColorAsset = async ({ root, isNight = false, name, colorString }) => {
-  const colorsPath = join(getValuesPath(root), "colors.xml");
+  const colorsPath = join(
+    ensureDir(getValuesPath(root, isNight)),
+    "colors.xml"
+  );
+  const hex = toFullHexadecimal(colorString);
   const o = await (existsSync(colorsPath)
     ? parseStringPromise(readFileSync(colorsPath, { encoding: "utf8" }))
     : { resources: { color: [] } });
+  //look for color with my name
+  if (!o.resources) o.resources = { color: [] };
+  if (!o.resources.color) o.resources.color = [];
+  console.log(o);
+  const c = o.resources.color.find(
+    ({ $: { name: myName } }) => name === myName
+  );
+  if (c) c._ = hex;
+  else o.resources.color.push({ $: { name }, _: hex });
   const builder = new Builder();
   writeFileSync(colorsPath, builder.buildObject(o));
   return true;
 };
 const getDrawablePath = (root = process.cwd(), scale, isNight = false) =>
-  join(getResPath(root), pathWithScale("drawable", isNight, scale));
+  ensureDir(join(getResPath(root), pathWithScale("drawable", isNight, scale)));
 const getValuesPath = (root = process.cwd(), isNight = false) =>
   join(getResPath(root), pathWithScale("values", isNight));
 
