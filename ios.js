@@ -213,7 +213,6 @@ const getPBXProj = (root = process.cwd()) =>
 const addResource = (fileName, root = process.cwd()) =>
   addResourceToProject(fileName, getPBXProj(root));
 const addResourceToProject = (fileName, path) => {
-  console.log("project path is ", path);
   const project = Xcode.project(path);
   project.parseSync();
   const fp = project.getFirstProject();
