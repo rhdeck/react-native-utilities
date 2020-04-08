@@ -53,7 +53,6 @@ const makeColorAsset = async ({ root, isNight = false, name, colorString }) => {
   //look for color with my name
   if (!o.resources) o.resources = { color: [] };
   if (!o.resources.color) o.resources.color = [];
-  console.log(o);
   const c = o.resources.color.find(
     ({ $: { name: myName } }) => name === myName
   );
