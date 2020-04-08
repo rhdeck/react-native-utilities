@@ -5,6 +5,8 @@ const { resizeImage, ensureDir, toFullHexadecimal } = require("./common");
 const getAppPath = (root = process.cwd()) => join(root, "android", "app");
 const getMainPath = (root = process.cwd()) =>
   join(getAppPath(root), "src", "main");
+const getManifestPath = (root = process.cwd()) =>
+  join(getMainPath(root), "AndroidManifest.xml");
 const getResPath = (root = process.cwd()) => join(getMainPath(root), "res");
 const sizes = {
   xxxhdpi: 4,
@@ -74,4 +76,5 @@ module.exports = {
   getAppPath,
   getMainPath,
   getResPath,
+  getManifestPath,
 };
