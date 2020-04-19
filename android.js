@@ -171,7 +171,7 @@ const setValue = async (
     isNight = false;
   }
   const path = join(getValuesPath(root, isNight), `${type}.xml`);
-  if (!existsSync(path)) throw "There is no file at path " + filePath;
+  if (!existsSync(path)) throw "There is no file at path " + path;
   //read the xml
   const xml = readFileSync(path, { encoding: "utf8" });
   const o = await parseStringPromise(xml);
@@ -195,7 +195,7 @@ const removeValue = async (
     isNight = false;
   }
   const path = join(getValuesPath(root, isNight), `${type}.xml`);
-  if (!existsSync(path)) throw "There is no file at path " + filePath;
+  if (!existsSync(path)) throw "There is no file at path " + path;
   //read the xml
   const xml = readFileSync(path, { encoding: "utf8" });
   const o = await parseStringPromise(xml);
@@ -212,7 +212,7 @@ const listValues = async (set, type, isNight = false, root = process.cwd()) => {
     isNight = false;
   }
   const path = join(getValuesPath(root, isNight), `${type}.xml`);
-  if (!existsSync(path)) throw "There is no file at path " + filePath;
+  if (!existsSync(path)) throw "There is no file at path " + path;
   //read the xml
   const xml = readFileSync(path, { encoding: "utf8" });
   const o = await parseStringPromise(xml);
