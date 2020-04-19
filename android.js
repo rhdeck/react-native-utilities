@@ -7,6 +7,97 @@ const getMainPath = (root = process.cwd()) =>
   join(getAppPath(root), "src", "main");
 const getManifestPath = (root = process.cwd()) =>
   join(getMainPath(root), "AndroidManifest.xml");
+
+const addPermission = async (permissionName, path = process.cwd()) => {
+  const manifestPath = getManifestPath(path);
+  const src = readFileSync(manifestPath, { encoding: "utf8" });
+  const o = await parseStringPromise(src);
+  const manifest = o["manifest"];
+  if (!manifest["uses-permission"]) manifest["uses-permission"] = [];
+  const permissions = manifest["uses-permission"];
+  if (
+    !permissions.some(
+      ({ $: { ["android:name"]: name } }) => name === permissionName
+    )
+  ) {
+    permissions.push({ $: { ["android:name"]: permissionName } });
+  }
+  const out = new Builder().buildObject(o);
+  writeFileSync(manifestPath, out);
+  return true;
+};
+const removePermission = async (permissionName, path = process.cwd()) => {
+  const manifestPath = getManifestPath(path);
+  const src = readFileSync(manifestPath, { encoding: "utf8" });
+  const o = await parseStringPromise(src);
+  const manifest = o["manifest"];
+  if (!manifest["uses-permission"]) return;
+  manifest["uses-permission"] = manifest["uses-permission"].filter(
+    ({ $: { ["android:name"]: name } }) => name === permissionName
+  );
+  const out = new Builder().buildObject(o);
+  writeFileSync(manifestPath, out);
+  return true;
+};
+const listPermissions = async (path = process.cwd()) => {
+  const manifestPath = getManifestPath(path);
+  const src = readFileSync(manifestPath, { encoding: "utf8" });
+  const o = await parseStringPromise(src);
+  const manifest = o["manifest"];
+  if (!manifest["uses-permission"]) return [];
+  return manifest["uses-permission"].map(
+    ({ $: { ["android:name"]: name } }) => name
+  );
+};
+const setFeature = async (
+  feature,
+  options = { "android:required": "false" },
+  path = process.cwd()
+) => {
+  const manifestPath = getManifestPath(path);
+  const src = readFileSync(manifestPath, { encoding: "utf8" });
+  const o = await parseStringPromise(src);
+  const manifest = o["manifest"];
+  if (!manifest["uses-feature"]) manifest["uses-feature"] = [];
+  manifest["uses-feature"] = manifest["uses-feature"].filter(
+    ({ $: { ["android:name"]: an } = {} }) => feature !== an
+  );
+  manifest["uses-feature"].push({
+    $: {
+      ["android:name"]: feature,
+      ...options,
+    },
+  });
+  const out = new Builder().buildObject(o);
+  writeFileSync(manifestPath, out);
+  return true;
+};
+const removeFeature = async (feature, path = process.cwd()) => {
+  const manifestPath = getManifestPath(path);
+  const src = readFileSync(manifestPath, { encoding: "utf8" });
+  const o = await parseStringPromise(src);
+  const manifest = o["manifest"];
+  if (!manifest["uses-feature"]) return;
+  manifest["uses-feature"] = manifest["uses-feature"].filter(
+    ({ $: { ["android:name"]: an } }) => feature !== an
+  );
+  const out = new Builder().buildObject(o);
+  writeFileSync(manifestPath, out);
+  return true;
+};
+const listFeatures = async (path = process.cwd()) => {
+  const manifestPath = getManifestPath(path);
+  const src = readFileSync(manifestPath, { encoding: "utf8" });
+  const o = await parseStringPromise(src);
+  const manifest = o["manifest"];
+  if (!manifest["uses-feature"]) return [];
+  return manifest["uses-feature"].map(
+    ({ $: { ["android:name"]: name, ...options } }) => ({
+      name,
+      options,
+    })
+  );
+};
 const getResPath = (root = process.cwd()) => join(getMainPath(root), "res");
 const sizes = {
   xxxhdpi: 4,
@@ -76,4 +167,10 @@ module.exports = {
   getMainPath,
   getResPath,
   getManifestPath,
+  addPermission,
+  removePermission,
+  listPermissions,
+  setFeature,
+  removeFeature,
+  listFeatures,
 };
