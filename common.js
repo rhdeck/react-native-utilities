@@ -1,5 +1,6 @@
 const jimp = require("jimp");
 const { existsSync, mkdirSync, writeFileSync, readFileSync } = require("fs");
+const { join } = require("path");
 const ensureDir = (dir) => {
   if (!existsSync(dir)) mkdirSync(dir);
   return dir;
