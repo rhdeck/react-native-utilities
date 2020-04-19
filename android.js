@@ -230,10 +230,9 @@ const removeString = async (key, root = process.cwd()) =>
 const removeColor = async (key, isNight = false, root = process.cwd()) =>
   removeValue("colors", "color", key, isNight, root);
 const listStrings = async (key, root = process.cwd()) =>
-  removeValue("strings", "string", key, root);
-const listValues = async (isNight = false, root = process.cwd()) =>
-  removeValue("colors", "color", isNight, root);
-
+  listValues("strings", "string", key, root);
+const listColors = async (isNight = false, root = process.cwd()) =>
+  listValues("colors", "color", isNight, root);
 module.exports = {
   makeImageAsset,
   makeColorAsset,
