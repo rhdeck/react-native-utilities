@@ -6,7 +6,6 @@ const { parse, stringify } = require("ini");
 const getAndroidPath = (root = process.cwd()) => join(root, "android");
 const getGradlePropertiesPath = (root = process.cwd()) =>
   join(getAndroidPath(root), "gradle.properties");
-
 const getGradleProperties = (root = process.cwd()) => {
   const text = readFileSync(getGradlePropertiesPath(root), {
     encoding: "utf8",
@@ -17,14 +16,22 @@ const getGradleProperties = (root = process.cwd()) => {
 const setGradleProperty = (key, value, root = process.cwd()) => {
   const o = getGradleProperties(root);
   o[key] = value;
-  writeFileSync(getGradlePropertiesPath(root), stringify(o));
+  writeGradleProperties(o);
   return true;
 };
 const removeGradleProperty = (key, root = process.cwd()) => {
   const o = getGradleProperties(root);
   delete o[key];
-  writeFileSync(getGradlePropertiesPath(root), stringify(o));
+  writeGradleProperties(o);
   return true;
+};
+const writeGradleProperties = (o, root = process.cwd()) => {
+  writeFileSync(
+    getGradlePropertiesPath(root),
+    Object.entries(o)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n")
+  );
 };
 const getAppPath = (root = process.cwd()) => join(root, "android", "app");
 const getMainPath = (root = process.cwd()) =>
