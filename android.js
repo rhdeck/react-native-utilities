@@ -11,7 +11,7 @@ const getGradleProperties = (root = process.cwd()) => {
   const text = readFileSync(getGradlePropertiesPath(root), {
     encoding: "utf8",
   });
-  const o = ini.parse(text);
+  const o = parse(text);
   return o;
 };
 const setGradleProperty = (key, value, root = process.cwd()) => {
