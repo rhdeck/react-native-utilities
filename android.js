@@ -167,9 +167,9 @@ const setValue = async (
   root = process.cwd()
 ) => {
   if (typeof set === "undefined") throw "value is required";
-  if (typeof value === "undefined") throw "value is required";
-  if (typeof key === "undefined") throw "key is required";
   if (typeof type === "undefined") throw "type is required";
+  if (typeof key === "undefined") throw "key is required";
+  if (typeof value === "undefined") throw "value is required";
   console.log("starting setvalue", set, type, key, value);
   if (typeof isNight === "string") {
     root = isNight;
@@ -199,6 +199,10 @@ const removeValue = async (
   isNight = false,
   root = process.cwd()
 ) => {
+  if (typeof set === "undefined") throw "value is required";
+  if (typeof type === "undefined") throw "type is required";
+  if (typeof key === "undefined") throw "key is required";
+
   if (typeof isNight === "string") {
     path = isNight;
     isNight = false;
@@ -216,6 +220,9 @@ const removeValue = async (
   return true;
 };
 const listValues = async (set, type, isNight = false, root = process.cwd()) => {
+  if (typeof set === "undefined") throw "value is required";
+  if (typeof type === "undefined") throw "type is required";
+
   if (typeof isNight === "string") {
     path = isNight;
     isNight = false;
