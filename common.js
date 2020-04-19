@@ -36,7 +36,7 @@ const getDisplayName = (root = process.cwd()) => {
 const setDisplayName = (newName, root = process.cwd()) => {
   const o = getApp(root);
   o.displayName = newName;
-  writeFileSync(getAppJsonPath(), JSON.parse(o, null, 2));
+  writeFileSync(getAppJsonPath(), JSON.stringify(o, null, 2));
 };
 const getProjectName = (root = process.cwd()) => {
   try {
