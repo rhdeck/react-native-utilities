@@ -158,6 +158,82 @@ const getDrawablePath = (root = process.cwd(), scale, isNight = false) =>
 const getValuesPath = (root = process.cwd(), isNight = false) =>
   ensureDir(join(getResPath(root), pathWithScale("values", isNight)));
 
+const setValue = async (
+  set,
+  type,
+  key,
+  value,
+  isNight = false,
+  root = process.cwd()
+) => {
+  if (typeof isNight === "string") {
+    path = isNight;
+    isNight = false;
+  }
+  const path = join(getValuesPath(root, isNight), `${type}.xml`);
+  if (!existsSync(path)) throw "There is no file at path " + filePath;
+  //read the xml
+  const xml = readFileSync(path, { encoding: "utf8" });
+  const o = await parseStringPromise(xml);
+  o.resources[set] = (o.resources[set] || []).filter(
+    ({ $: { name } }) => name !== key
+  );
+  o.resources[set].push({ $: { name: key }, _: value });
+  const out = await new Builder().buildObject(o);
+  writeFileSync(path, out);
+  return true;
+};
+const removeValue = async (
+  set,
+  type,
+  key,
+  isNight = false,
+  root = process.cwd()
+) => {
+  if (typeof isNight === "string") {
+    path = isNight;
+    isNight = false;
+  }
+  const path = join(getValuesPath(root, isNight), `${type}.xml`);
+  if (!existsSync(path)) throw "There is no file at path " + filePath;
+  //read the xml
+  const xml = readFileSync(path, { encoding: "utf8" });
+  const o = await parseStringPromise(xml);
+  o.resources[set] = (o.resources[set] || []).filter(
+    ({ $: { name } }) => name !== key
+  );
+  const out = await new Builder().buildObject(o);
+  writeFileSync(path, out);
+  return true;
+};
+const listValues = async (set, type, isNight = false, root = process.cwd()) => {
+  if (typeof isNight === "string") {
+    path = isNight;
+    isNight = false;
+  }
+  const path = join(getValuesPath(root, isNight), `${type}.xml`);
+  if (!existsSync(path)) throw "There is no file at path " + filePath;
+  //read the xml
+  const xml = readFileSync(path, { encoding: "utf8" });
+  const o = await parseStringPromise(xml);
+  return (o.resources[set] = (
+    o.resources[set] || []
+  ).map(({ $: { name: key }, _: value }) => ({ key, value })));
+};
+
+const setString = async (key, value, root = process.cwd()) =>
+  setValue("strings", "string", key, value, root);
+const setColor = async (key, value, isNight = false, root = process.cwd()) =>
+  setValue("colors", "color", key, value, isNight, root);
+const removeString = async (key, root = process.cwd()) =>
+  removeValue("strings", "string", key, root);
+const removeColor = async (key, isNight = false, root = process.cwd()) =>
+  removeValue("colors", "color", key, isNight, root);
+const listStrings = async (key, root = process.cwd()) =>
+  removeValue("strings", "string", key, root);
+const listValues = async (isNight = false, root = process.cwd()) =>
+  removeValue("colors", "color", isNight, root);
+
 module.exports = {
   makeImageAsset,
   makeColorAsset,
@@ -173,4 +249,13 @@ module.exports = {
   setFeature,
   removeFeature,
   listFeatures,
+  setValue,
+  setString,
+  setColor,
+  removeValue,
+  listValues,
+  removeString,
+  removeColor,
+  listColors,
+  listStrings,
 };
