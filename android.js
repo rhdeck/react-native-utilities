@@ -167,7 +167,7 @@ const setValue = async (
   root = process.cwd()
 ) => {
   if (typeof isNight === "string") {
-    path = isNight;
+    root = isNight;
     isNight = false;
   }
   const path = join(getValuesPath(root, isNight), `${type}.xml`);
