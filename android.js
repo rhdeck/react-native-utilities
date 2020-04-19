@@ -2,6 +2,30 @@ const { join } = require("path");
 const { readFileSync, writeFileSync, existsSync } = require("fs");
 const { parseStringPromise, Builder } = require("xml2js");
 const { resizeImage, ensureDir, toFullHexadecimal } = require("./common");
+const { parse, stringify } = require("ini");
+const getAndroidPath = (root = process.cwd()) => join(root, "android");
+const getGradlePropertiesPath = (root = process.cwd()) =>
+  join(getAndroidPath(root), "gradle.properties");
+
+const getGradleProperties = (root = process.cwd()) => {
+  const text = readFileSync(getGradlePropertiesPath(root), {
+    encoding: "utf8",
+  });
+  const o = ini.parse(text);
+  return o;
+};
+const setGradleProperty = (key, value, root = process.cwd()) => {
+  const o = getGradleProperties(root);
+  o[key] = value;
+  writeFileSync(getGradlePropertiesPath(root), stringify(o));
+  return true;
+};
+const removeGradleProperty = (key, root = process.cwd()) => {
+  const o = getGradleProperties(root);
+  delete o[key];
+  writeFileSync(getGradlePropertiesPath(root), stringify(o));
+  return true;
+};
 const getAppPath = (root = process.cwd()) => join(root, "android", "app");
 const getMainPath = (root = process.cwd()) =>
   join(getAppPath(root), "src", "main");
@@ -273,4 +297,7 @@ module.exports = {
   removeColor,
   listColors,
   listStrings,
+  getGradleProperties,
+  setGradleProperty,
+  removeGradleProperty,
 };
