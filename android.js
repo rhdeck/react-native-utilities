@@ -1,7 +1,9 @@
-const { join } = require("path");
+const { join, dirname } = require("path");
 const { readFileSync, writeFileSync, existsSync } = require("fs");
 const { parseStringPromise, Builder } = require("xml2js");
 const { resizeImage, ensureDir, toFullHexadecimal } = require("./common");
+const { sync: glob } = require("glob");
+
 const getAndroidPath = (root = process.cwd()) => join(root, "android");
 const getGradlePropertiesPath = (root = process.cwd()) =>
   join(getAndroidPath(root), "gradle.properties");
@@ -284,6 +286,33 @@ const listStrings = async (key, root = process.cwd()) =>
   listValues("strings", "string", key, root);
 const listColors = async (isNight = false, root = process.cwd()) =>
   listValues("colors", "color", isNight, root);
+const getJavaPath = (root = process.cwd()) => join(getMainPath(), "java");
+const getMainJavaPath = (root = process.cwd()) => {
+  const paths = glob(join(getJavaPath(root), "**", "MainApplication.java"));
+  const path = paths[0];
+  return dirname(path);
+};
+const setModuleName = (newName, root = process.cwd()) => {
+  if (!newName) throw "name argument is required";
+  const path = join(getMainJavaPath(root), "MainActivity.java");
+  const text = readFileSync(path, { encoding: "utf8" });
+  //Look for the module in the java
+  const lines = text.split("\n");
+  //Look for the function that calls the module
+  const searchString = "protected String getMainComponentName() {";
+  const index = lines.findIndex((l) => l.trim === searchString);
+  if (index === -1) throw "could not find getMainComponentName in " + path;
+  if (lines[index + 1].trim().startsWith("return ")) {
+    //replace with my target
+    lines[index + 1] = ` return "${newName}"`;
+  } else {
+    throw (
+      "The first line of getMainComponentName was not a return statement, so bailing:\n" +
+      [lines[index], lines[index + 1] + " <---", lines[index + 2]].join("\n")
+    );
+  }
+  writeFileSync(path, lines.join("\n"));
+};
 module.exports = {
   makeImageAsset,
   makeColorAsset,
@@ -311,4 +340,7 @@ module.exports = {
   getGradleProperties,
   setGradleProperty,
   removeGradleProperty,
+  getMainJavaPath,
+  getJavaPath,
+  setModuleName,
 };
