@@ -31,7 +31,9 @@ const writeGradleProperties = (o, root = process.cwd()) => {
   writeFileSync(
     getGradlePropertiesPath(root),
     Object.entries(o)
-      .map(([key, value]) => `${key}=${value}`)
+      .map(([key, value]) =>
+        typeof value === "undefined" ? key : `${key}=${value}`
+      )
       .join("\n")
   );
 };
