@@ -2,7 +2,6 @@ const { join } = require("path");
 const { readFileSync, writeFileSync, existsSync } = require("fs");
 const { parseStringPromise, Builder } = require("xml2js");
 const { resizeImage, ensureDir, toFullHexadecimal } = require("./common");
-const { parse, stringify } = require("ini");
 const getAndroidPath = (root = process.cwd()) => join(root, "android");
 const getGradlePropertiesPath = (root = process.cwd()) =>
   join(getAndroidPath(root), "gradle.properties");
@@ -10,7 +9,10 @@ const getGradleProperties = (root = process.cwd()) => {
   const text = readFileSync(getGradlePropertiesPath(root), {
     encoding: "utf8",
   });
-  const o = parse(text);
+  const o = text.split("\n").reduce((o, line) => {
+    const [key, value] = line.split("=", 2);
+    return { ...o, [key]: value };
+  }, {});
   return o;
 };
 const setGradleProperty = (key, value, root = process.cwd()) => {
