@@ -166,19 +166,28 @@ const setValue = async (
   isNight = false,
   root = process.cwd()
 ) => {
+  if (typeof set === "undefined") throw "value is required";
+  if (typeof value === "undefined") throw "value is required";
+  if (typeof key === "undefined") throw "key is required";
+  if (typeof type === "undefined") throw "type is required";
+  console.log("starting setvalue", set, type, key, value);
   if (typeof isNight === "string") {
     root = isNight;
     isNight = false;
   }
-  const path = join(getValuesPath(root, isNight), `${type}.xml`);
+  console.log("iam about to do that join");
+  const path = join(getValuesPath(root, isNight), `${set}.xml`);
+  console.log("This is my path", path);
   if (!existsSync(path)) throw "There is no file at path " + path;
+
   //read the xml
   const xml = readFileSync(path, { encoding: "utf8" });
   const o = await parseStringPromise(xml);
-  o.resources[set] = (o.resources[set] || []).filter(
+  o.resources[type] = (o.resources[type] || []).filter(
     ({ $: { name } }) => name !== key
   );
-  o.resources[set].push({ $: { name: key }, _: value });
+  o.resources[type].push({ $: { name: key }, _: value });
+  console.log(JSON.stringify(o, null, 2));
   const out = await new Builder().buildObject(o);
   writeFileSync(path, out);
   return true;
@@ -194,12 +203,12 @@ const removeValue = async (
     path = isNight;
     isNight = false;
   }
-  const path = join(getValuesPath(root, isNight), `${type}.xml`);
+  const path = join(getValuesPath(root, isNight), `${set}.xml`);
   if (!existsSync(path)) throw "There is no file at path " + path;
   //read the xml
   const xml = readFileSync(path, { encoding: "utf8" });
   const o = await parseStringPromise(xml);
-  o.resources[set] = (o.resources[set] || []).filter(
+  o.resources[type] = (o.resources[type] || []).filter(
     ({ $: { name } }) => name !== key
   );
   const out = await new Builder().buildObject(o);
@@ -211,13 +220,13 @@ const listValues = async (set, type, isNight = false, root = process.cwd()) => {
     path = isNight;
     isNight = false;
   }
-  const path = join(getValuesPath(root, isNight), `${type}.xml`);
+  const path = join(getValuesPath(root, isNight), `${set}.xml`);
   if (!existsSync(path)) throw "There is no file at path " + path;
   //read the xml
   const xml = readFileSync(path, { encoding: "utf8" });
   const o = await parseStringPromise(xml);
-  return (o.resources[set] = (
-    o.resources[set] || []
+  return (o.resources[type] = (
+    o.resources[type] || []
   ).map(({ $: { name: key }, _: value }) => ({ key, value })));
 };
 
