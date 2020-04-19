@@ -2,7 +2,12 @@ const { join, dirname, basename } = require("path");
 const { readFileSync, writeFileSync, existsSync, mkdirSync } = require("fs");
 const Xcode = require("@raydeck/xcode");
 const Plist = require("plist");
-const { ensureDir, toFullHexadecimal, resizeImage } = require("./common");
+const {
+  ensureDir,
+  toFullHexadecimal,
+  resizeImage,
+  getProjectName,
+} = require("./common");
 const hexadecimalToColor = (hex) => ({
   r: (parseInt(hex[1] + hex[2], 16) / 255).toPrecision(15),
   g: (parseInt(hex[3] + hex[4], 16) / 255).toPrecision(15),
@@ -193,18 +198,7 @@ const makeColorAsset = async ({
   ensureDir(colorSetPath);
   writeFileSync(join(colorSetPath, "Contents.json"), json);
 };
-const getProjectName = (root = process.cwd()) => {
-  try {
-    const appJsonPath = join(root, "app.json");
-    const appJson = readFileSync(appJsonPath, "utf-8");
-    const { name } = JSON.parse(appJson);
-    if (!name) throw new Error("Invalid projectPath");
-    return name;
-  } catch (e) {
-    console.warn(e);
-    throw new Error("invalid appJson");
-  }
-};
+
 const getDir = (root = process.cwd()) => join(root, "ios");
 const getProjectDir = (root = process.cwd()) =>
   join(getDir(), getProjectName(root));
