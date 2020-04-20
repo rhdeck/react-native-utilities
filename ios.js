@@ -231,7 +231,9 @@ const getPlistPath = (root = process.cwd()) => {
   return join(projectDir, "Info.plist");
 };
 const setPlistValue = (key, value, root = process.cwd()) =>
-  setPlistValueToPlist(key, value, getPlistPath(root));
+  setPlistValues({ [key]: value }, (root));
+const setPlistValues = (keyValueObject, root = process.cwd()) => 
+setPlistValuesToPlist(keyValueObject, getPlistPath(root))
 const readPlist = (root = process.cwd()) => {
   const path = getPlistPath(root);
   return readPlistFromPlist(path);
@@ -240,10 +242,9 @@ const readPlistFromPlist = (path) => {
   const xml = readFileSync(path, { encoding: "utf8" });
   return Plist.parse(xml);
 };
-const setPlistValueToPlist = (key, value, path) => {
+const setPlistValuesToPlist = (o, path) => {
   const xml = readFileSync(path, { encoding: "utf8" });
-  const plist = Plist.parse(xml);
-  plist[key] = value;
+  const plist = {Plist.parse(xml), ...o}
   const out = Plist.build(plist);
   writeFileSync(path, out);
 };
