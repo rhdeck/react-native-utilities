@@ -202,8 +202,10 @@ const makeColorAsset = async ({
 const getDir = (root = process.cwd()) => join(root, "ios");
 const getProjectDir = (root = process.cwd()) =>
   join(getDir(), getProjectName(root));
+const getXcodeProj = (root = process.cwd()) =>
+  getProjectDir(root) + ".xcodeproj";
 const getPBXProj = (root = process.cwd()) =>
-  join(getProjectDir(root) + ".xcodeproj", "project.pbxproj");
+  join(getXcodeProj(root), "project.pbxproj");
 const addResource = (fileName, root = process.cwd()) =>
   addResourceToProject(fileName, getPBXProj(root));
 const addResourceToProject = (fileName, path) => {
@@ -231,9 +233,9 @@ const getPlistPath = (root = process.cwd()) => {
   return join(projectDir, "Info.plist");
 };
 const setPlistValue = (key, value, root = process.cwd()) =>
-  setPlistValues({ [key]: value }, (root));
-const setPlistValues = (keyValueObject, root = process.cwd()) => 
-setPlistValuesToPlist(keyValueObject, getPlistPath(root))
+  setPlistValues({ [key]: value }, root);
+const setPlistValues = (keyValueObject, root = process.cwd()) =>
+  setPlistValuesToPlist(keyValueObject, getPlistPath(root));
 const readPlist = (root = process.cwd()) => {
   const path = getPlistPath(root);
   return readPlistFromPlist(path);
@@ -244,7 +246,7 @@ const readPlistFromPlist = (path) => {
 };
 const setPlistValuesToPlist = (o, path) => {
   const xml = readFileSync(path, { encoding: "utf8" });
-  const plist = {Plist.parse(xml), ...o}
+  const plist = { ...Plist.parse(xml), ...o };
   const out = Plist.build(plist);
   writeFileSync(path, out);
 };
@@ -269,4 +271,5 @@ module.exports = {
   getAssetsPath,
   getProjectDir,
   getProjectName,
+  getXcodeProj,
 };
