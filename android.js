@@ -343,4 +343,5 @@ module.exports = {
   getMainJavaPath,
   getJavaPath,
   setModuleName,
+  getAndroidPath,
 };
