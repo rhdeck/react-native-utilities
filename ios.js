@@ -1,5 +1,12 @@
 const { join, dirname, basename } = require("path");
-const { readFileSync, writeFileSync, existsSync, mkdirSync } = require("fs");
+const {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  exists,
+  copyFileSync,
+} = require("fs");
 const Xcode = require("@raydeck/xcode");
 const Plist = require("plist");
 const {
@@ -228,6 +235,31 @@ const addResourceToProject = (fileName, path) => {
   const out = project.writeSync();
   writeFileSync(path, out);
 };
+const setBuildProperty = (key, value, root = process.cwd()) =>
+  setBuildPropertyToProject(key, value, getPBXProj(root));
+const setBuildPropertyToProject = (key, value, path) => {
+  const project = Xcode.project(path);
+  project.parseSync();
+  project.addBuildProperty(key, value);
+  const out = project.writeSync();
+  writeFileSync(path, out);
+};
+const removeBuildProperty = (key, root = process.cwd()) =>
+  removeBuildPropertyFromProject(key, getPBXProj(root));
+const removeBuildPropertyFromProject = (key, value, path) => {
+  const project = Xcode.project(path);
+  project.parseSync();
+  project.removeBuildProperty(key, value);
+  const out = project.writeSync();
+  writeFileSync(path, out);
+};
+const getBuildProperty = (key, root = process.cwd()) =>
+  getBuildPropertyFromProject(key, getPBXProj(root));
+const getBuildPropertyFromProject = (key, path) => {
+  const project = Xcode.project(path);
+  project.parseSync();
+  return project.getBuildProperty(key);
+};
 const getPlistPath = (root = process.cwd()) => {
   const projectDir = getProjectDir(root);
   return join(projectDir, "Info.plist");
@@ -246,7 +278,7 @@ const readPlistFromPlist = (path) => {
 };
 const setPlistValuesToPlist = (o, path) => {
   const xml = readFileSync(path, { encoding: "utf8" });
-  const plist = { ...Plist.parse(xml), ...o };
+  const plist = xml ? { ...Plist.parse(xml), ...o } : o;
   const out = Plist.build(plist);
   writeFileSync(path, out);
 };
@@ -258,6 +290,44 @@ const getPlistValue = (key, root = process.cwd()) => {
 const getPlistValueFromPlist = (key, path) => {
   const plist = readPlistFromPlist(path);
   return plist[key];
+};
+const removePlistValueFromPlist = (key, path) => {
+  return removePlistValuesFromPlist([key], path);
+};
+const removePlistValuesFromPlist = (keys, path) => {
+  const plist = readPlistFromPlist(path);
+  keys.forEach((key) => delete plist[key]);
+  const out = Plist.build(plist);
+  writeFileSync(path, out);
+};
+const getEntitlementFile = (root = process.cwd()) => {
+  const projectName = getProjectName(root);
+  const path = join(getProjectDir(root), `${projectName}.entitlements`);
+  if (!existsSync(path)) {
+    //Add it
+    copyFileSync(join(__dirname, "templates", "entitlements.template"), path);
+    addResource(path, root);
+  }
+  //Check the pbxfile for this record
+  //check for entitlements file and add it if missing
+  return path;
+};
+const registerEntitlementFile = (entitlementFile, root) => {
+  addResource(entitlementFile, root);
+};
+const getEntitlement = (key, root = process.cwd()) => {
+  return getPlistValueFromPlist(key, getEntitlementFile(root));
+};
+const removeEntitlement = (key, root = process.cwd()) => {
+  return removePlistValueFromPlist(key, getEntitlementFile(root));
+};
+const setEntitlement = (key, value, root = process.cwd()) => {
+  return setEntitlements({ [key]: value }, root);
+};
+const setEntitlements = (o, root = process.cwd()) => {
+  const entitlementFile = getEntitlementFile(root);
+  const out = setPlistValuesToPlist(o, entitlementFile);
+  registerEntitlementFile(entitlementFile, root);
 };
 module.exports = {
   readPlist,
@@ -272,4 +342,11 @@ module.exports = {
   getProjectDir,
   getProjectName,
   getXcodeProj,
+  setEntitlement,
+  setEntitlements,
+  removeEntitlement,
+  getEntitlement,
+  setBuildProperty,
+  removeBuildProperty,
+  getBuildProperty,
 };
