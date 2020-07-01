@@ -1,6 +1,6 @@
 {
   "name": "@raydeck/react-native-utilities",
-  "version": "1.3.13",
+  "version": "1.4.0",
   "description": "Utility library for advanced React Native development",
   "main": "index.js",
   "scripts": {
