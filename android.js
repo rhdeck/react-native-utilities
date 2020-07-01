@@ -44,7 +44,24 @@ const getMainPath = (root = process.cwd()) =>
   join(getAppPath(root), "src", "main");
 const getManifestPath = (root = process.cwd()) =>
   join(getMainPath(root), "AndroidManifest.xml");
-
+const getManifestPackageName = async (root = process.cwd()) => {
+  const manifestPath = getManifestPath(root);
+  const src = readFileSync(manifestPath, { encoding: "utf8" });
+  const o = await parseStringPromise(src);
+  const manifest = o["manifest"];
+  const { package } = manifest["$"];
+  return package;
+};
+const setManifestPackageName = async (packageName, root = process.cwd()) => {
+  const manifestPath = getManifestPath(root);
+  const src = readFileSync(manifestPath, { encoding: "utf8" });
+  const o = await parseStringPromise(src);
+  const manifest = o["manifest"];
+  manifest["$"].package = packageName;
+  const out = new Builder().buildObject(o);
+  writeFileSync(manifestPath, out);
+  return true;
+};
 const addPermission = async (permissionName, path = process.cwd()) => {
   const manifestPath = getManifestPath(path);
   const src = readFileSync(manifestPath, { encoding: "utf8" });
@@ -344,4 +361,6 @@ module.exports = {
   getJavaPath,
   setModuleName,
   getAndroidPath,
+  getManifestPackageName,
+  setManifestPackageName,
 };
