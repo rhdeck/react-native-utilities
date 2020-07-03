@@ -166,7 +166,7 @@ const makeColorAsset = async ({
       //get the matching color from colors
       const colorContrast = contrast || "normal";
       const colorLuminosity = luminosity || "light";
-      const color = colors[colorContrast][colorLuminosity];
+      let color = colors[colorContrast][colorLuminosity];
       const out = { idiom: "universal" };
       if (contrast || luminosity) {
         out.appearances = [];
