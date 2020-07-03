@@ -1,2 +1,17 @@
 # react-native-utilities
- Utilities for managing native considerations for React Native
+
+Functions for managing React Native projects
+
+```javascript
+const { ios, android, common } = require("@raydeck/react-native-utilities");
+
+///...
+
+await ios.getBuildProperty("PRODUCT_BUNDLE_IDENTIFIER");
+```
+
+## android
+
+## ios
+
+## common
